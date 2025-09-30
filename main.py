@@ -6,16 +6,17 @@ import sys
 # Import library Selenium yang diperlukan
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-# PENTING: Import Service dan ChromeDriverManager
-from selenium.webdriver.chrome.service import Service 
-from webdriver_manager.chrome import ChromeDriverManager 
+from webdriver_manager.chrome import ChromeDriverManager # PENTING: Untuk mengunduh driver yang kompatibel
 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.service import Service # Digunakan untuk inisialisasi driver
 
 # --- 1. KONSTANTA PENGATURAN BOT ---
+# Akun TikTok yang pengikutnya akan kita target
 TARGET_ACCOUNT = "racuntiktok.office" 
+# Batasi jumlah follow per sesi untuk keamanan
 MAX_FOLLOW_PER_SESSION = 20 
 
 # --- 2. AMBIL KREDENSIAL DARI VARIABEL LINGKUNGAN ---
@@ -31,15 +32,17 @@ def setup_driver():
         sys.exit(1)
 
     chrome_options = Options()
+    # Opsi WAJIB untuk server/cloud hosting
     chrome_options.add_argument("--headless") 
     chrome_options.add_argument("--no-sandbox")         
-    chrome_options.add_argument("--disable-dev-shm-usage")
+    chrome_options.add_argument("--disable-dev-shm-usage") # Mengatasi masalah memori di container
+    chrome_options.add_argument("--disable-setuid-sandbox") # Mengatasi masalah keamanan di container
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-gpu") 
     chrome_options.add_argument("--disable-extensions")
     
     # PENTING: Tentukan lokasi binary Chromium yang diinstal oleh Build Command
-    chrome_options.binary_location = '/usr/bin/chromium-browser' 
+    chrome_options.binary_location = '/usr/bin/chromium' 
     
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
@@ -56,7 +59,7 @@ def setup_driver():
         sys.exit(1) 
 
 
-# --- FUNGSI login_tiktok, auto_follow, dan __main__ tetap SAMA ---
+# --- FUNGSI LOGIN DAN FOLLOW ---
 
 def login_tiktok(driver, wait):
     """Melakukan proses login otomatis ke TikTok."""
@@ -164,7 +167,9 @@ if __name__ == "__main__":
     wait = WebDriverWait(driver, 30) 
 
     try:
+        # 1. Jalankan Login
         if login_tiktok(driver, wait):
+            # 2. Jika Login berhasil, jalankan Auto Follow
             auto_follow(driver, wait)
         else:
             print("Tidak dapat menjalankan auto follow karena login gagal.")
@@ -173,6 +178,7 @@ if __name__ == "__main__":
         print(f"❌ Kesalahan fatal dalam eksekusi bot: {final_e}")
         
     finally:
+        # Tutup driver
         if driver:
             driver.quit()
             print("\n🏁 Driver ditutup. Bot selesai dieksekusi.")
