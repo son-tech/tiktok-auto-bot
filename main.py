@@ -6,7 +6,6 @@ import sys
 # Import library Selenium yang diperlukan
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from selenium.webdriver.chrome.service import Service # PENTING: Untuk menentukan jalur driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -43,15 +42,16 @@ def setup_driver():
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
-    # --- PENTING: Perbaikan Jalur Driver untuk Railway ---
+    # --- PENTING: Perbaikan Jalur Driver untuk Railway (PATH ABSOLUT) ---
     try:
-        # Tentukan lokasi executable driver yang diinstal via apt-get
-        service = Service(executable_path='/usr/bin/chromedriver') 
-        # Tentukan lokasi binary Chromium yang diinstal via apt-get
+        # Menghapus Service dan langsung menggunakan binary location yang diinstal via apt-get
         chrome_options.binary_location = '/usr/bin/chromium-browser' 
-
-        print("✅ Menginisialisasi Chrome WebDriver dengan jalur kustom...")
-        driver = webdriver.Chrome(service=service, options=chrome_options)
+        
+        # NOTE: Kita harus memastikan 'chromedriver' ada di PATH sistem.
+        # Jika apt-get install chromium-browser berhasil, chromedriver seharusnya ada di /usr/bin/
+        
+        print("✅ Menginisialisasi Chrome WebDriver...")
+        driver = webdriver.Chrome(options=chrome_options)
         return driver
     except Exception as e:
         print(f"❌ Gagal menginisialisasi driver. Pastikan Chromium sudah terinstal di server! Error: {e}")
