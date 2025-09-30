@@ -6,12 +6,11 @@ import sys
 # Import library Selenium yang diperlukan
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
-from webdriver_manager.chrome import ChromeDriverManager # PENTING: Untuk mengunduh driver yang kompatibel
-
+from webdriver_manager.chrome import ChromeDriverManager 
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.service import Service # Digunakan untuk inisialisasi driver
+from selenium.webdriver.chrome.service import Service 
 
 # --- 1. KONSTANTA PENGATURAN BOT ---
 # Akun TikTok yang pengikutnya akan kita target
@@ -35,20 +34,21 @@ def setup_driver():
     # Opsi WAJIB untuk server/cloud hosting
     chrome_options.add_argument("--headless") 
     chrome_options.add_argument("--no-sandbox")         
-    chrome_options.add_argument("--disable-dev-shm-usage") # Mengatasi masalah memori di container
-    chrome_options.add_argument("--disable-setuid-sandbox") # Mengatasi masalah keamanan di container
+    chrome_options.add_argument("--disable-dev-shm-usage") 
+    chrome_options.add_argument("--disable-setuid-sandbox") 
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-gpu") 
     chrome_options.add_argument("--disable-extensions")
     
     # PENTING: Tentukan lokasi binary Chromium yang diinstal oleh Build Command
+    # Ini membantu Chromedriver menemukan browser di lingkungan Linux
     chrome_options.binary_location = '/usr/bin/chromium' 
     
-    user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
+    user_agent = 'Mozilla/50 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
     try:
-        # PENTING: Gunakan ChromeDriverManager untuk mengunduh driver yang benar
+        # PENTING: Gunakan ChromeDriverManager untuk mengunduh driver yang kompatibel
         service = Service(ChromeDriverManager().install())
         
         print("✅ Menginisialisasi Chrome WebDriver dengan webdriver-manager...")
@@ -56,6 +56,7 @@ def setup_driver():
         return driver
     except Exception as e:
         print(f"❌ Gagal menginisialisasi driver. Error: {e}")
+        print("Mungkin ada library Linux yang hilang. Pastikan Build Command sudah diperbarui!")
         sys.exit(1) 
 
 
