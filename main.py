@@ -1,11 +1,12 @@
 import os
 import time
 import random
-import sys # Digunakan untuk keluar dari program jika ada error fatal
+import sys 
 
 # Import library Selenium yang diperlukan
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.chrome.service import Service # PENTING: Untuk menentukan jalur driver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -20,7 +21,7 @@ MAX_FOLLOW_PER_SESSION = 20
 USERNAME = os.environ.get("TIKTOK_USERNAME")
 PASSWORD = os.environ.get("TIKTOK_PASSWORD")
 
-# --- 3. KONFIGURASI HEADLESS DRIVER (WAJIB DI SERVER) ---
+# --- 3. KONFIGURASI HEADLESS DRIVER & JALUR LOKASI ---
 def setup_driver():
     """Mengatur dan mengembalikan Chrome WebDriver dalam mode Headless."""
     
@@ -32,19 +33,25 @@ def setup_driver():
     chrome_options = Options()
     # Opsi WAJIB untuk server/cloud hosting
     chrome_options.add_argument("--headless") 
-    chrome_options.add_argument("--no-sandbox")         # Penting untuk lingkungan Linux/server
+    chrome_options.add_argument("--no-sandbox")         
     chrome_options.add_argument("--disable-dev-shm-usage")
     chrome_options.add_argument("--window-size=1920,1080")
     chrome_options.add_argument("--disable-gpu") 
     chrome_options.add_argument("--disable-extensions")
     
-    # Menambahkan User Agent untuk terlihat seperti browser biasa
+    # Menambahkan User Agent
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
-    print("✅ Menginisialisasi Chrome WebDriver...")
+    # --- PENTING: Perbaikan Jalur Driver untuk Railway ---
     try:
-        driver = webdriver.Chrome(options=chrome_options)
+        # Tentukan lokasi executable driver yang diinstal via apt-get
+        service = Service(executable_path='/usr/bin/chromedriver') 
+        # Tentukan lokasi binary Chromium yang diinstal via apt-get
+        chrome_options.binary_location = '/usr/bin/chromium-browser' 
+
+        print("✅ Menginisialisasi Chrome WebDriver dengan jalur kustom...")
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
     except Exception as e:
         print(f"❌ Gagal menginisialisasi driver. Pastikan Chromium sudah terinstal di server! Error: {e}")
@@ -56,9 +63,8 @@ def login_tiktok(driver, wait):
     """Melakukan proses login otomatis ke TikTok."""
     print("➡️ Membuka halaman login TikTok...")
     
-    # TikTok login flow
     driver.get("https://www.tiktok.com/login")
-    time.sleep(5) # Tunggu halaman awal dimuat
+    time.sleep(5) 
 
     try:
         # 1. Klik opsi login dengan Email/Username
@@ -83,10 +89,10 @@ def login_tiktok(driver, wait):
         login_button.click()
         print("   -> Mengirim kredensial login.")
         
-        # Tunggu proses login dan verifikasi (CAPTHCA)
+        # Tunggu proses login
         time.sleep(random.randint(10, 20)) 
         
-        # 5. Cek keberhasilan login (biasanya URL akan berubah jika berhasil)
+        # 5. Cek keberhasilan login
         if "login" not in driver.current_url:
             print("🎉 Login berhasil!")
             return True
@@ -105,7 +111,7 @@ def auto_follow(driver, wait):
     
     # Navigasi ke halaman followers dari akun target
     driver.get(f"https://www.tiktok.com/@{TARGET_ACCOUNT}/followers")
-    time.sleep(5) # Tunggu halaman dimuat
+    time.sleep(5) 
 
     try:
         # Tunggu pop-up followers (list) muncul
@@ -119,8 +125,7 @@ def auto_follow(driver, wait):
         # Loop untuk mencari dan mengklik tombol 'Follow'
         while follow_count < MAX_FOLLOW_PER_SESSION:
             try:
-                # 1. Cari tombol 'Follow' yang dapat diklik di dalam kontainer followers
-                # XPath ini mungkin perlu disesuaikan jika TikTok mengubah struktur HTML
+                # 1. Cari tombol 'Follow' yang dapat diklik
                 follow_button = followers_container.find_element(By.XPATH, ".//button[text()='Follow']")
                 
                 # 2. Klik tombol follow
@@ -135,14 +140,11 @@ def auto_follow(driver, wait):
                 time.sleep(sleep_time)
 
             except:
-                # Jika tombol 'Follow' tidak ditemukan (sudah semua di-follow atau sudah di-follow), scroll
-                
-                # Scroll ke bawah untuk memuat lebih banyak followers
+                # Jika tombol 'Follow' tidak ditemukan, scroll
                 driver.execute_script("arguments[0].scrollTop = arguments[0].scrollTop + 500;", followers_container)
                 print("   -> Scrolling untuk memuat lebih banyak pengguna.")
                 time.sleep(random.uniform(3, 7))
                 
-                # Periksa apakah target sudah tercapai
                 if follow_count >= MAX_FOLLOW_PER_SESSION:
                     break
         
