@@ -22,7 +22,7 @@ MAX_FOLLOW_PER_SESSION = 20
 USERNAME = os.environ.get("TIKTOK_USERNAME")
 PASSWORD = os.environ.get("TIKTOK_PASSWORD")
 
-# --- 3. KONFIGURASI HEADLESS DRIVER (SOLUSI webdriver-manager) ---
+# --- 3. KONFIGURASI HEADLESS DRIVER (SOLUSI Chrome Stable) ---
 def setup_driver():
     """Mengatur dan mengembalikan Chrome WebDriver dalam mode Headless."""
     
@@ -40,15 +40,15 @@ def setup_driver():
     chrome_options.add_argument("--disable-gpu") 
     chrome_options.add_argument("--disable-extensions")
     
-    # PENTING: Tentukan lokasi binary Chromium yang diinstal oleh Build Command
-    # Ini membantu Chromedriver menemukan browser di lingkungan Linux
-    chrome_options.binary_location = '/usr/bin/chromium' 
+    # PENTING: Tentukan lokasi binary Google Chrome Stable
+    # Build Command yang baru menginstal browser di sini.
+    chrome_options.binary_location = '/usr/bin/google-chrome' 
     
     user_agent = 'Mozilla/50 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
     try:
-        # PENTING: Gunakan ChromeDriverManager untuk mengunduh driver yang kompatibel
+        # Gunakan ChromeDriverManager untuk mengunduh driver yang kompatibel
         service = Service(ChromeDriverManager().install())
         
         print("✅ Menginisialisasi Chrome WebDriver dengan webdriver-manager...")
@@ -56,7 +56,7 @@ def setup_driver():
         return driver
     except Exception as e:
         print(f"❌ Gagal menginisialisasi driver. Error: {e}")
-        print("Mungkin ada library Linux yang hilang. Pastikan Build Command sudah diperbarui!")
+        print("Pastikan Google Chrome Stable telah berhasil diinstal melalui Build Command.")
         sys.exit(1) 
 
 
@@ -71,6 +71,7 @@ def login_tiktok(driver, wait):
 
     try:
         # 1. Klik opsi login dengan Email/Username
+        # XPATH mungkin perlu disesuaikan jika TikTok berubah
         email_tab = wait.until(
             EC.element_to_be_clickable((By.XPATH, "//div[text()='Log in with email or username']"))
         )
@@ -92,7 +93,7 @@ def login_tiktok(driver, wait):
         login_button.click()
         print("   -> Mengirim kredensial login.")
         
-        # Tunggu proses login
+        # Tunggu proses login dan verifikasi
         time.sleep(random.randint(10, 20)) 
         
         # 5. Cek keberhasilan login
