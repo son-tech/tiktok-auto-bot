@@ -1,2 +1,2 @@
-# Isi requirements.txt
 selenium
+webdriver-manager
