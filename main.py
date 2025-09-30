@@ -6,31 +6,31 @@ import sys
 # Import library Selenium yang diperlukan
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
+# PENTING: Import Service dan ChromeDriverManager
+from selenium.webdriver.chrome.service import Service 
+from webdriver_manager.chrome import ChromeDriverManager 
+
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 
 # --- 1. KONSTANTA PENGATURAN BOT ---
-# Akun TikTok yang pengikutnya akan kita target
 TARGET_ACCOUNT = "racuntiktok.office" 
-# Batasi jumlah follow per sesi untuk keamanan
 MAX_FOLLOW_PER_SESSION = 20 
 
 # --- 2. AMBIL KREDENSIAL DARI VARIABEL LINGKUNGAN ---
 USERNAME = os.environ.get("TIKTOK_USERNAME")
 PASSWORD = os.environ.get("TIKTOK_PASSWORD")
 
-# --- 3. KONFIGURASI HEADLESS DRIVER & JALUR LOKASI ---
+# --- 3. KONFIGURASI HEADLESS DRIVER (SOLUSI webdriver-manager) ---
 def setup_driver():
     """Mengatur dan mengembalikan Chrome WebDriver dalam mode Headless."""
     
     if not USERNAME or not PASSWORD:
         print("❌ ERROR: Variabel lingkungan TIKTOK_USERNAME atau TIKTOK_PASSWORD tidak ditemukan.")
-        print("Silakan atur di Environment Variables Railway Anda.")
-        return None
+        sys.exit(1)
 
     chrome_options = Options()
-    # Opsi WAJIB untuk server/cloud hosting
     chrome_options.add_argument("--headless") 
     chrome_options.add_argument("--no-sandbox")         
     chrome_options.add_argument("--disable-dev-shm-usage")
@@ -38,26 +38,25 @@ def setup_driver():
     chrome_options.add_argument("--disable-gpu") 
     chrome_options.add_argument("--disable-extensions")
     
-    # Menambahkan User Agent
+    # PENTING: Tentukan lokasi binary Chromium yang diinstal oleh Build Command
+    chrome_options.binary_location = '/usr/bin/chromium-browser' 
+    
     user_agent = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36'
     chrome_options.add_argument(f'user-agent={user_agent}')
 
-    # --- PENTING: Perbaikan Jalur Driver untuk Railway (PATH ABSOLUT) ---
     try:
-        # Menghapus Service dan langsung menggunakan binary location yang diinstal via apt-get
-        chrome_options.binary_location = '/usr/bin/chromium-browser' 
+        # PENTING: Gunakan ChromeDriverManager untuk mengunduh driver yang benar
+        service = Service(ChromeDriverManager().install())
         
-        # NOTE: Kita harus memastikan 'chromedriver' ada di PATH sistem.
-        # Jika apt-get install chromium-browser berhasil, chromedriver seharusnya ada di /usr/bin/
-        
-        print("✅ Menginisialisasi Chrome WebDriver...")
-        driver = webdriver.Chrome(options=chrome_options)
+        print("✅ Menginisialisasi Chrome WebDriver dengan webdriver-manager...")
+        driver = webdriver.Chrome(service=service, options=chrome_options)
         return driver
     except Exception as e:
-        print(f"❌ Gagal menginisialisasi driver. Pastikan Chromium sudah terinstal di server! Error: {e}")
-        # Keluar dari script jika driver gagal diinisialisasi
+        print(f"❌ Gagal menginisialisasi driver. Error: {e}")
         sys.exit(1) 
 
+
+# --- FUNGSI login_tiktok, auto_follow, dan __main__ tetap SAMA ---
 
 def login_tiktok(driver, wait):
     """Melakukan proses login otomatis ke TikTok."""
@@ -165,9 +164,7 @@ if __name__ == "__main__":
     wait = WebDriverWait(driver, 30) 
 
     try:
-        # 1. Jalankan Login
         if login_tiktok(driver, wait):
-            # 2. Jika Login berhasil, jalankan Auto Follow
             auto_follow(driver, wait)
         else:
             print("Tidak dapat menjalankan auto follow karena login gagal.")
@@ -176,7 +173,6 @@ if __name__ == "__main__":
         print(f"❌ Kesalahan fatal dalam eksekusi bot: {final_e}")
         
     finally:
-        # Tutup driver
         if driver:
             driver.quit()
             print("\n🏁 Driver ditutup. Bot selesai dieksekusi.")
