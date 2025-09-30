@@ -94,7 +94,7 @@ def login_tiktok(driver, wait):
         return False
 
 
-def auto_follow(driver, wait, target_username="target_akun_populer"):
+def auto_follow(driver, wait, target_username="racuntiktok.office"):
     """Menjalankan logika auto follow di followers akun target."""
     print(f"\n🚀 Mulai proses auto follow di followers dari @{target_username}...")
     
